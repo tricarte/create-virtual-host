@@ -13,7 +13,7 @@ if [[ ! -d /etc/nginx/conf.d ]]; then
 fi
 
 sudo wget -q \
-    https://gist.githubusercontent.com/tricarte/8c4595ef50649a91e2ca6462c27f2d42/raw/51368e32871588c2cbae0eb3490bcf6604c9b534/example.com.conf \
+    https://gist.githubusercontent.com/tricarte/8c4595ef50649a91e2ca6462c27f2d42/raw/46e66ca337f532507396d1bb83371bf500a96073/example.com.conf \
     -O "/etc/nginx/conf.d/.$SITE.conf"
 
 ROOT="/home/$(whoami)/sites/$SITE/public"
