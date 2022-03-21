@@ -16,7 +16,7 @@ sudo wget -q \
     https://gist.githubusercontent.com/tricarte/8c4595ef50649a91e2ca6462c27f2d42/raw/7f58be951c81c2e39231b0118f7e82c8e6eeb804/example.com.conf \
     -O "/etc/nginx/conf.d/.$SITE.conf"
 
-ROOT="/home/$(whoami)/sites/$SITE"
+ROOT="/home/$(whoami)/sites/$SITE/public"
 sudo replace -s '/var/www/example.com/public' "$ROOT" -- "/etc/nginx/conf.d/.$SITE.conf"
 sudo replace -s 'example.com' "$SITE" -- "/etc/nginx/conf.d/.$SITE.conf"
 
