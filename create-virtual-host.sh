@@ -7,6 +7,7 @@ if [[ -z $SITE ]]; then
     exit 1
 fi
 
+# TODO: Also check that virtual host files are here
 if [[ ! -d /etc/nginx/conf.d ]]; then
     echo "/etc/nginx/conf.d does not exist."
     exit
