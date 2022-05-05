@@ -22,5 +22,8 @@ sudo replace -s '/var/www/example.com/public' "$ROOT" -- "/etc/nginx/conf.d/.$SI
 sudo replace -s 'example.com' "$SITE" -- "/etc/nginx/conf.d/.$SITE.conf"
 # sudo replace -s 'host-ip-address' "$(hostname -I)" -- "/etc/nginx/conf.d/.$SITE.conf"
 
+# Remove comment header from script
+sudo sed -i "1,6d" "/etc/nginx/conf.d/.$SITE.conf"
+
 echo "Virtual host \"$SITE\" has been created in /etc/nginx/conf.d."
 echo "Remove the preceding dot to enable it."
