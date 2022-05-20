@@ -1,29 +1,74 @@
 #!/usr/bin/env bash
 
-SITE=$1
+PARAMS=""
+while (( "$#" )); do
+case "$1" in
+    -n|--name)
+        if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+            SERVER_NAME=$2
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            exit 1
+        fi
+        ;;
+    -r|--root)
+        if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+            DOCROOT=$2
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            exit 1
+        fi
+        ;;
+    -h|--help)
+        echo "Usage:"
+        echo "$0 --name example.com --root /var/www/example.com/public"
+        exit
+        ;;
+    --*|-*) # unsupported flags
+        echo "Error: Unsupported flag $1" >&2
+        exit 1
+        ;;
+    *) # preserve positional arguments
+        PARAMS="$PARAMS $1"
+        shift
+        ;;
+esac
+done
+# set positional arguments in their proper place
+eval set -- "$PARAMS"
 
-if [[ -z $SITE ]]; then
-    echo "Provide a domain name such as example.com as a parameter."
+if [[ -z $SERVER_NAME ]]; then
+    echo "Provide a domain name such as example.com using --name."
+    exit 1
+fi
+
+if [[ -z $DOCROOT ]]; then
+    echo "Provide the document root with --root."
     exit 1
 fi
 
 # TODO: Also check that virtual host files are here
 if [[ ! -d /etc/nginx/conf.d ]]; then
     echo "/etc/nginx/conf.d does not exist."
-    exit
+    exit 1
 fi
 
-sudo wget -q \
+wget -q \
     https://gist.githubusercontent.com/tricarte/8c4595ef50649a91e2ca6462c27f2d42/raw/example.com.conf \
-    -O "/etc/nginx/conf.d/.$SITE.conf"
+    -O "/etc/nginx/conf.d/.$SERVER_NAME.conf"
 
-ROOT="/home/$(whoami)/sites/$SITE/public"
-sudo replace -s '/var/www/example.com/public' "$ROOT" -- "/etc/nginx/conf.d/.$SITE.conf"
-sudo replace -s 'example.com' "$SITE" -- "/etc/nginx/conf.d/.$SITE.conf"
-# sudo replace -s 'host-ip-address' "$(hostname -I)" -- "/etc/nginx/conf.d/.$SITE.conf"
+replace -s '/var/www/example.com/public' "$DOCROOT" -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
+replace -s 'example.com' "$SERVER_NAME" -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
+# sudo replace -s 'host-ip-address' "$(hostname -I)" -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
 
 # Remove comment header from script
-sudo sed -i "1,6d" "/etc/nginx/conf.d/.$SITE.conf"
+sed -i "1,6d" "/etc/nginx/conf.d/.$SERVER_NAME.conf"
 
-echo "Virtual host \"$SITE\" has been created in /etc/nginx/conf.d."
+echo "Virtual host \"$SERVER_NAME\" has been created in /etc/nginx/conf.d."
 echo "Remove the preceding dot to enable it."
+
+# TODO: script htpasswd
+# -c create password file, -i read from stdin
+# htpasswd -c -i ~/temp/password admin < ~/temp/pass_plain
