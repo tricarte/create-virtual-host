@@ -61,7 +61,7 @@ wget -q \
 
 replace -s '/var/www/example.com/public' "$DOCROOT" -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
 replace -s 'example.com' "$SERVER_NAME" -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
-# sudo replace -s 'host-ip-address' "$(hostname -I)" -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
+replace -s 'host-ip-address' "$(hostname -I)" -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
 
 # Remove comment header from script
 sed -i "1,6d" "/etc/nginx/conf.d/.$SERVER_NAME.conf"
