@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+#-----------------------------------------------------------------------
+# An incron script to apply open_basedir setting to the currently active
+# php-fpm's php.ini file when a new wpstarter based site is created in
+# a watched directory.
+#
+# Arguments:
+#   $1: Full path to the watched directory's parent directory.
+#   $2: Watched directory
+#-----------------------------------------------------------------------
+
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin\
+:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+
+sleep 120
+
+if [[ ! -f "$1/$2/wpstarter.json" ]]; then
+    exit
+fi
+
+# grep -m1 -> return only one match
+# For a PHP 7.4 installation, output will be "/run/php/php7.4-fpm.sock"
+default_fpm=$(
+    update-alternatives --quiet --query php-fpm.sock \
+        | grep Value -m1 | cut -d" " -f2
+    )
+
+fpmfname=$(basename "$default_fpm")
+# php7.4-fpm.sock
+
+# Remove '.sock' from above
+fpmfname=${fpmfname%.sock}
+# Now we have 'php7.4-fpm'
+
+if ! echo "$fpmfname" | grep "^php[0-9].[0-9]-fpmm$" -q; then
+    echo "php-fpm service name not in the form: ^php[0-9].[0-9]-fpm$"
+    logger "INCRON Job : Cannot find out php-fpm name: $fpmfname"
+    exit
+fi
+
+fpmversion=$(echo "$fpmfname" | cut -c4-6)
+
+phpfpm_service_name="${fpmfname}.service"
+
+if [[ -f "/etc/php/${fpmversion}/fpm/php.ini" ]]; then
+    echo "
+[HOST=$2]
+open_basedir=$1/$2:/tmp" \
+    | tee -a "/etc/php/$fpmversion/fpm/php.ini"
+
+    if  systemctl is-enabled "$phpfpm_service_name" -q && \
+        systemctl is-active "$phpfpm_service_name" -q; then
+        systemctl reload "$phpfpm_service_name"
+    fi
+else
+    logger "INCRON Job : Cannot find out php-fpm version: $fpmversion"
+fi

@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#-----------------------------------------------------------------------
+# Create nginx virtual hosts in /etc/nginx/conf.d using a github gist.
+# Example:
+#   $ sudo mkvhost --name example.com --root /var/www/example.com/public
+#-----------------------------------------------------------------------
 
 PARAMS=""
 while (( "$#" )); do
@@ -23,7 +28,7 @@ case "$1" in
         ;;
     -h|--help)
         echo "Usage:"
-        echo "$0 --name example.com --root /var/www/example.com/public"
+        echo "sudo $0 --name example.com --root /var/www/example.com/public"
         exit
         ;;
     --*|-*) # unsupported flags
@@ -55,13 +60,16 @@ if [[ ! -d /etc/nginx/conf.d ]]; then
     exit 1
 fi
 
-wget -q \
-    https://gist.githubusercontent.com/tricarte/8c4595ef50649a91e2ca6462c27f2d42/raw/example.com.conf \
-    -O "/etc/nginx/conf.d/.$SERVER_NAME.conf"
+wget -q "https://gist.githubusercontent.com/tricarte/\
+8c4595ef50649a91e2ca6462c27f2d42/raw/example.com.conf" \
+    -O "/home/sagirbas/hebele/conf.d/.${SERVER_NAME}.conf"
 
-replace -s '/var/www/example.com/public' "$DOCROOT" -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
-replace -s 'example.com' "$SERVER_NAME" -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
-replace -s 'host-ip-address' "$(hostname -I)" -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
+replace -s '/var/www/example.com/public' "$DOCROOT" \
+    -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
+replace -s 'example.com' "$SERVER_NAME" \
+    -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
+replace -s 'host-ip-address' "$(hostname -I)" \
+    -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
 
 # Remove comment header from script
 sed -i "1,6d" "/etc/nginx/conf.d/.$SERVER_NAME.conf"
