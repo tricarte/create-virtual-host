@@ -32,7 +32,7 @@ fpmfname=$(basename "$default_fpm")
 fpmfname=${fpmfname%.sock}
 # Now we have 'php7.4-fpm'
 
-if ! echo "$fpmfname" | grep "^php[0-9].[0-9]-fpmm$" -q; then
+if ! echo "$fpmfname" | grep "^php[0-9].[0-9]-fpm$" -q; then
     echo "php-fpm service name not in the form: ^php[0-9].[0-9]-fpm$"
     logger "INCRON Job : Cannot find out php-fpm name: $fpmfname"
     exit

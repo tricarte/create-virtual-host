@@ -62,7 +62,7 @@ fi
 
 wget -q "https://gist.githubusercontent.com/tricarte/\
 8c4595ef50649a91e2ca6462c27f2d42/raw/example.com.conf" \
-    -O "/home/sagirbas/hebele/conf.d/.${SERVER_NAME}.conf"
+    -O "/etc/nginx/conf.d/.${SERVER_NAME}.conf"
 
 replace -s '/var/www/example.com/public' "$DOCROOT" \
     -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
