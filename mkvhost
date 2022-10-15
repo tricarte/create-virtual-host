@@ -2,81 +2,126 @@
 #-----------------------------------------------------------------------
 # Create nginx virtual hosts in /etc/nginx/conf.d using a github gist.
 # Example:
-#   $ sudo mkvhost --name example.com --root /var/www/example.com/public
+# $ sudo mkvhost -p --name example.com --root /var/www/example.com/public
 #-----------------------------------------------------------------------
 
 PARAMS=""
-while (( "$#" )); do
-case "$1" in
-    -n|--name)
-        if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
-            SERVER_NAME=$2
-            shift 2
-        else
-            echo "Error: Argument for $1 is missing" >&2
-            exit 1
-        fi
-        ;;
-    -r|--root)
-        if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
-            DOCROOT=$2
-            shift 2
-        else
-            echo "Error: Argument for $1 is missing" >&2
-            exit 1
-        fi
-        ;;
-    -h|--help)
-        echo "Usage:"
-        echo "sudo $0 --name example.com --root /var/www/example.com/public"
-        exit
-        ;;
-    --*|-*) # unsupported flags
-        echo "Error: Unsupported flag $1" >&2
-        exit 1
-        ;;
-    *) # preserve positional arguments
-        PARAMS="$PARAMS $1"
-        shift
-        ;;
-esac
+while (("$#")); do
+  case "$1" in
+  -n | --name)
+    if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+      SERVER_NAME=$2
+      shift 2
+    else
+      echo "Error: Argument for $1 is missing" >&2
+      exit 1
+    fi
+    ;;
+  -r | --root)
+    if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+      DOCROOT=$2
+      shift 2
+    else
+      echo "Error: Argument for $1 is missing" >&2
+      exit 1
+    fi
+    ;;
+  -p | --htpasswd)
+    # Generate htpasswd entry for HTTP Basic Auth
+    GENPASS=true
+    shift
+    ;;
+  -h | --help)
+    echo "Usage:"
+    echo "sudo $0 --name example.com --root /var/www/example.com/public --htpasswd"
+    echo "Use -p or --htpasswd to create .htpasswd file."
+    exit
+    ;;
+  --* | -*) # unsupported flags
+    echo "Error: Unsupported flag $1" >&2
+    exit 1
+    ;;
+  *) # preserve positional arguments
+    PARAMS="$PARAMS $1"
+    shift
+    ;;
+  esac
 done
 # set positional arguments in their proper place
 eval set -- "$PARAMS"
 
 if [[ -z $SERVER_NAME ]]; then
-    echo "Provide a domain name such as example.com using --name."
-    exit 1
+  echo "Provide a domain name such as example.com using --name."
+  exit 1
 fi
 
 if [[ -z $DOCROOT ]]; then
-    echo "Provide the document root with --root."
-    exit 1
+  echo "Provide the document root with --root."
+  exit 1
 fi
 
 # TODO: Also check that virtual host files are here
 if [[ ! -d /etc/nginx/conf.d ]]; then
-    echo "/etc/nginx/conf.d does not exist."
-    exit 1
+  echo "/etc/nginx/conf.d does not exist."
+  exit 1
 fi
 
 wget -q "https://gist.githubusercontent.com/tricarte/\
 8c4595ef50649a91e2ca6462c27f2d42/raw/example.com.conf" \
-    -O "/etc/nginx/conf.d/.${SERVER_NAME}.conf"
+  -O "/etc/nginx/conf.d/.${SERVER_NAME}.conf"
 
 replace -s '/var/www/example.com/public' "$DOCROOT" \
-    -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
+  -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
 replace -s 'example.com' "$SERVER_NAME" \
-    -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
+  -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
 replace -s 'host-ip-address' "$(hostname -I)" \
-    -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
+  -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
 
 # Remove comment header from script
 sed -i "1,6d" "/etc/nginx/conf.d/.$SERVER_NAME.conf"
 
+# Generate htpasswd
+if [[ $GENPASS ]]; then
+  while :; do
+    echo ""
+    echo "Enter a username for HTTP Basic Auth: "
+    read -r HTTP_AUTH_USERNAME
+
+    if [[ -n $HTTP_AUTH_USERNAME ]]; then
+      break
+    else
+      echo ""
+      echo "Username cannot be empty."
+    fi
+  done
+
+  while :; do
+    echo ""
+    echo "Enter a password for ${HTTP_AUTH_USERNAME}: "
+    read -rs HTTP_AUTH_PASS
+
+    echo "Reenter the password: "
+    read -rs HTTP_AUTH_PASSCHK
+
+    if [[ $HTTP_AUTH_PASS == "$HTTP_AUTH_PASSCHK" ]]; then
+      break
+    else
+      echo ""
+      echo "Passwords do not match."
+    fi
+  done
+
+  passwdfile="/etc/nginx/.htpasswd"
+
+  touch "$passwdfile"
+  htpasswd -i -B $passwdfile "$HTTP_AUTH_USERNAME" < <(echo -e "$HTTP_AUTH_PASS")
+  chmod 644 "$passwdfile"
+
+fi
+
+echo ""
 echo "Virtual host \"$SERVER_NAME\" has been created in /etc/nginx/conf.d."
 echo "Remove the preceding dot to enable it."
 
 # TODO: script htpasswd
 # -c create password file, -i read from stdin
-# htpasswd -c -i ~/temp/password admin < ~/temp/pass_plain
