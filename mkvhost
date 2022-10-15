@@ -122,6 +122,3 @@ fi
 echo ""
 echo "Virtual host \"$SERVER_NAME\" has been created in /etc/nginx/conf.d."
 echo "Remove the preceding dot to enable it."
-
-# TODO: script htpasswd
-# -c create password file, -i read from stdin
