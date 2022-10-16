@@ -5,14 +5,38 @@
 # $ sudo mkvhost -p --name example.com --root /var/www/example.com/public
 #-----------------------------------------------------------------------
 
+[[ -z ${SUDO_USER:-} ]] && {
+  echo "This script should be run with sudo!"
+  exit
+}
+
+function printUsage() {
+  echo ""
+  echo "Usage:"
+  echo ""
+  echo "sudo $0 --name example.com --root /var/www/example.com/public --htpasswd"
+  echo ""
+  echo "Use -p or --htpasswd to create .htpasswd file."
+}
+
+if [[ -z $1 ]]; then
+  printUsage
+  exit
+fi
+
 PARAMS=""
 while (("$#")); do
   case "$1" in
+  -h | --help)
+    printUsage
+    exit
+    ;;
   -n | --name)
     if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
       SERVER_NAME=$2
       shift 2
     else
+      echo ""
       echo "Error: Argument for $1 is missing" >&2
       exit 1
     fi
@@ -22,6 +46,7 @@ while (("$#")); do
       DOCROOT=$2
       shift 2
     else
+      echo ""
       echo "Error: Argument for $1 is missing" >&2
       exit 1
     fi
@@ -31,13 +56,8 @@ while (("$#")); do
     GENPASS=true
     shift
     ;;
-  -h | --help)
-    echo "Usage:"
-    echo "sudo $0 --name example.com --root /var/www/example.com/public --htpasswd"
-    echo "Use -p or --htpasswd to create .htpasswd file."
-    exit
-    ;;
   --* | -*) # unsupported flags
+    echo ""
     echo "Error: Unsupported flag $1" >&2
     exit 1
     ;;
@@ -51,17 +71,20 @@ done
 eval set -- "$PARAMS"
 
 if [[ -z $SERVER_NAME ]]; then
+  echo ""
   echo "Provide a domain name such as example.com using --name."
   exit 1
 fi
 
 if [[ -z $DOCROOT ]]; then
+  echo ""
   echo "Provide the document root with --root."
   exit 1
 fi
 
 # TODO: Also check that virtual host files are here
 if [[ ! -d /etc/nginx/conf.d ]]; then
+  echo ""
   echo "/etc/nginx/conf.d does not exist."
   exit 1
 fi
@@ -69,6 +92,13 @@ fi
 wget -q "https://gist.githubusercontent.com/tricarte/\
 8c4595ef50649a91e2ca6462c27f2d42/raw/example.com.conf" \
   -O "/etc/nginx/conf.d/.${SERVER_NAME}.conf"
+
+if [[ ! -f "/etc/nginx/conf.d/.${SERVER_NAME}.conf" ]]; then
+  echo ""
+  echo "Virtual host template cannot be written to disk."
+  echo "Check your internet connection and make sure you are priviliged."
+  exit 1
+fi
 
 replace -s '/var/www/example.com/public' "$DOCROOT" \
   -- "/etc/nginx/conf.d/.$SERVER_NAME.conf"
